@@ -1,10 +1,26 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <a @click="$modal.push('config')">Config</a>
+    <div class="hero-head">
+      <nav class="main-nav navbar ">
+        <div class="container">
+          <div class="navbar-start">
+            <span
+              class="navbar-item"
+              href="https://jenil.github.io/bulmaswatch/"
+            >
+              <h1 class="title is-5">Toggl-backlog-aggregator</h1>
+            </span>
+            <a
+              class="navbar-item is-active"
+              @click="$modal.push('config')"
+            >Config</a>
+          </div>
+        </div>
+      </nav>
     </div>
-    <router-view/>
+    <div class="container">
+    <router-view />
+    </div>
     <modal name="config">
       <config />
     </modal>
