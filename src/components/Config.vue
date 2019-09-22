@@ -67,6 +67,26 @@
 
       <div class="section">
         <h2 class="title"> Common </h2>
+        <label class="label">period</label>
+        <div class="field is-grouped">
+          <p class="control">
+            <input
+              class="input"
+              type="number"
+              placeholder="2019"
+              v-model="year"
+            >
+          </p>
+          <p class="control">
+            <span class="select">
+              <select v-model="period">
+                <option value="former">上期</option>
+                <option value="later">下期</option>
+              </select>
+            </span>
+          </p>
+
+        </div>
         <div class="field">
           <p class="control">
             <label class="checkbox">
@@ -124,7 +144,18 @@ export default class Config extends Vue {
   set toggleWorkSpaceId (value: string) {
     togglStateModule.updateRequest({ workspace_id: value })
   }
-
+  get year (): string {
+    return togglStateModule.getYear
+  }
+  set year (value: string) {
+    togglStateModule.setYear(value)
+  }
+  get period (): string {
+    return togglStateModule.getPeriod
+  }
+  set period (value: string) {
+    togglStateModule.setPeriod(value)
+  }
   get useLocalStorage (): boolean {
     return frontConfig.useLocalStorage
   }
@@ -133,8 +164,6 @@ export default class Config extends Vue {
   }
   created () {}
   submit () {
-    togglStateModule.doRequest()
-    backlogStateModule.fetchSpace()
     this.$modal.pop()
   }
 }

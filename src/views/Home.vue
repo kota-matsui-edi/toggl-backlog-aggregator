@@ -1,43 +1,104 @@
 <template>
   <div class="home">
     <div class="section">
-      <progress class="progress is-small is-primary" max="100" v-if="togglLoading">15%</progress>
-      <template v-else-if="togglData.length === 0">
+      <div class="field is-grouped">
+        <p class="control">
+          <button
+            class="button is-primary"
+            @click="fetchToggl"
+          >fetch toggl</button>
+        </p>
+        <p class="control">
+          <button
+            class="button is-link"
+            @click="fetchBacklog"
+          >fetch backlog</button>
+        </p>
+      </div>
+      <progress
+        class="progress is-small is-primary"
+        max="100"
+        v-if="togglLoading"
+      >15%</progress>
+      <template v-else-if="formattedData.length === 0">
         <h3 class="title">No Data</h3>
         <p>please check your <a @click="$modal.push('config')">configrations</a>.</p>
       </template>
-      <table class="table is-bordered is-striped is-narrow" v-else>
-        <thead>
-          <tr>
-            <th> description </th>
-            <th> プロジェクト名 </th>
-            <th> 課題番号 </th>
-            <th>URL</th>
-            <th>親課題</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(datum, index) in togglData"
-            :key="index"
-          >
-            <td> {{datum.raw.description}} </td>
-            <td> {{datum.backlogProjectName}} </td>
-            <td> {{datum.backlogProjectID}} </td>
-            <td>
-              <a
-                :href="datum.backlogURL"
-                target="_blank"
-                rel="noopener noreferrer"
-              >{{datum.backlogURL}}</a>
-            </td>
-            <td>
-              {{datum.parent}}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div
+        class="content"
+        v-else
+      >
+        <table class="table is-bordered is-striped is-narrow">
+          <template v-for="(projectData, projectName) in formattedData">
+            <template v-if="projectName !== 'noProject'">
+              <h4 :key="projectName + 'h4'">{{projectName}}</h4>
 
+              <tbody :key="projectName + 'tbody'">
+                <tr>
+                  <th> チケット </th>
+                  <th> description </th>
+                  <th>予定時間</th>
+                  <th>実時間</th>
+                  <th>親課題</th>
+                  <th>状態</th>
+                  <th>結果</th>
+                </tr>
+                <tr
+                  v-for="(datum, id) in projectData"
+                  :key="id"
+                  class="is-danger"
+                >
+                  <td v-if="projectName !== 'noProject'"><a
+                      :href="datum.backlogURL"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      v-if="datum.backlogURL"
+                    >{{projectName + '-' + id}}</a><span v-else> -</span></td>
+                  <td> {{datum.raw.description}} </td>
+                  <td>
+                    {{datum.backlogData && datum.backlogData.estimatedHours ? datum.backlogData.estimatedHours + '時間': '-'}}
+                  </td>
+                  <td> {{datum.ninnichi}} </td>
+
+                  <td>
+                    <a :href="datum.parentURL" target="_blank" rel="noopener noreferrer" v-if="datum.parentURL">{{datum.parent}}</a>
+                    <span v-else>{{datum.parent}}</span>
+                  </td>
+                  <td>
+                    {{datum.backlogData && datum.backlogData.status ? datum.backlogData.status.name : '-'}}
+                  </td>
+                  <td>
+                    <a class="button is-info" v-if="datum.noEstimatedHours"> Nodata </a>
+                    <a class="button is-danger" v-else-if="datum.timeOverTwice"> Danger </a>
+                    <a class="button is-warning" v-else-if="datum.timeOver"> Warning </a>
+                    <a class="button is-success" v-else> Good </a>
+                  </td>
+                </tr>
+              </tbody>
+            </template>
+          </template>
+          <h4>該当プロジェクトなし</h4>
+          <tbody>
+            <tr>
+              <th> チケット </th>
+              <th> description </th>
+              <th>実時間</th>
+              <th>親課題</th>
+            </tr>
+            <tr
+              v-for="(datum, id) in formattedData.noProject"
+              :key="id"
+            >
+              <td>-</td>
+              <td> {{datum.raw.description}} </td>
+              <td> {{datum.raw.dur}} </td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+        <div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -69,15 +130,8 @@ export default class Home extends Vue {
     return togglStateModule.getResponse
   }
 
-  get togglData (): TogglItem[] {
-    const result: TogglItem[] = []
-    const res = this.res
-    if (res) {
-      res.data.forEach(datum => {
-        result.push(new TogglItem(datum))
-      })
-    }
-    return result
+  get formattedData () {
+    return togglStateModule.getFormattedData
   }
 
   get useLocalStorage (): boolean {
@@ -92,8 +146,16 @@ export default class Home extends Vue {
   }
 
   created () {}
-  submit () {
+  fetchToggl () {
     togglStateModule.doRequest()
+  }
+  fetchBacklog () {
+    togglStateModule.fetchBacklogStatus()
   }
 }
 </script>
+<style lang="scss" scoped>
+.table h4 {
+  margin-top: 1em;
+}
+</style>

@@ -34,7 +34,7 @@ declare module TogglApi {
       calculate: Calculate
     }
     export interface Details extends Base {
-      page: string
+      page?: number
     }
 
     export interface Summary extends Base {
@@ -76,7 +76,7 @@ declare module TogglApi {
     export interface Base {
       total_grand: number;
       total_billable?: number;
-      total_count?: number;
+      total_count: number;
       total_currencies: TotalCurrency[];
       data: any[];
     }
