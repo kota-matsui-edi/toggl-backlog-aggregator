@@ -1,70 +1,43 @@
 <template>
   <div class="home">
     <div class="section">
-      <div class="field">
-        <label class="label">Toggl API token <a
-            href="https://www.toggl.com/app/profile"
-            target="_blank"
-            rel="noopener noreferrer"
-          >https://www.toggl.com/app/profile</a></label>
-        <p class="control">
-          <input
-            class="input"
-            type="text"
-            placeholder="Text input"
-            v-model="togglApiToken"
+      <progress class="progress is-small is-primary" max="100" v-if="togglLoading">15%</progress>
+      <template v-else-if="togglData.length === 0">
+        <h3 class="title">No Data</h3>
+        <p>please check your <a @click="$modal.push('config')">configrations</a>.</p>
+      </template>
+      <table class="table is-bordered is-striped is-narrow" v-else>
+        <thead>
+          <tr>
+            <th> description </th>
+            <th> プロジェクト名 </th>
+            <th> 課題番号 </th>
+            <th>URL</th>
+            <th>親課題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(datum, index) in togglData"
+            :key="index"
           >
-        </p>
-      </div>
-      <div class="field">
-        <label class="label">The workspace whose data you want to access.</label>
-        <p class="control">
-          <input
-            class="input"
-            type="text"
-            placeholder="Text input"
-            v-model="toggleWorkSpaceId"
-          >
-        </p>
-      </div>
-      <div class="field">
-        <p class="control">
-          <label class="checkbox">
-            <input type="checkbox" v-model="useLocalStorage"> use local storage.
-          </label>
-        </p>
-      </div>
-      <div class="field is-grouped">
-        <p class="control">
-          <button class="button is-primary" @click="submit">Submit</button>
-        </p>
-        <p class="control">
-          <button class="button is-link">Cancel</button>
-        </p>
-      </div>
-    </div>
-    <div class="section">
-      <table class="table is-bordered is-striped is-narrow">
-    <thead>
-      <tr>
-        <th> description </th>
-        <th> プロジェクト名 </th>
-        <th> 課題番号 </th>
-        <th>URL</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="(datum, index) in togglData" :key="index">
-        <td> {{datum.raw.description}} </td>
-        <td> {{datum.backlogProjectName}} </td>
-        <td> {{datum.backlogProjectID}} </td>
-        <td>
-          <a :href="datum.backlogURL" target="_blank" rel="noopener noreferrer">{{datum.backlogURL}}</a>
-        </td>
+            <td> {{datum.raw.description}} </td>
+            <td> {{datum.backlogProjectName}} </td>
+            <td> {{datum.backlogProjectID}} </td>
+            <td>
+              <a
+                :href="datum.backlogURL"
+                target="_blank"
+                rel="noopener noreferrer"
+              >{{datum.backlogURL}}</a>
+            </td>
+            <td>
+              {{datum.parent}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-      </tr>
-    </tbody>
-  </table>
     </div>
   </div>
 </template>
@@ -113,6 +86,11 @@ export default class Home extends Vue {
   set useLocalStorage (value: boolean) {
     frontConfig.useLocalStorage = value
   }
+
+  get togglLoading (): boolean {
+    return togglStateModule.getLoading
+  }
+
   created () {}
   submit () {
     togglStateModule.doRequest()

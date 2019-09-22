@@ -1,4 +1,5 @@
 import { togglStateModule } from '@/stores/toggl'
+import { backlogStateModule } from '@/stores/backlog'
 
 import frontConfig from '@/classes/FrontConfig'
 
@@ -10,4 +11,5 @@ export default function initialize () {
   const recoveredStateAll = recoveredString ? JSON.parse(recoveredString) : null
   console.log(recoveredStateAll)
   togglStateModule.recover(recoveredStateAll)
+  backlogStateModule.recover(recoveredStateAll)
 }

@@ -2,35 +2,19 @@
 import { Module, VuexModule, Mutation, getModule, Action } from 'vuex-module-decorators'
 import store from '@/store'
 import axios, { AxiosResponse } from 'axios'
-declare type TogglApiType = 'base' | 'weekly'|'details' | 'summary'
-type Request = TogglApi.request.Base | TogglApi.request.Weekly | TogglApi.request.Details | TogglApi.request.Summary
-const name = 'toggl'
+declare type BacklogApiType = 'base' | 'weekly'|'details' | 'summary'
+const name = 'backlog'
 
 @Module({ dynamic: true, store, name, namespaced: true })
-class TogglStateModule extends VuexModule {
-  private type: TogglApiType = 'details'
-  private request: Request = {
-    user_agent: 'ediplex',
-    workspace_id: ''
-  }
+class BacklogStateModule extends VuexModule {
+  private workSpaceURL = ''
+  private type: BacklogApiType = 'details'
+  private request: any = {}
   private apiToken = ''
-  private response: TogglApi.responce.Details | null = null
+  private response: any | null = null
   private loading = false;
 
-  get requestURL (): string {
-    switch (this.type) {
-      case 'base':
-        return 'https://toggl.com/reports/api/v2'
-      case 'details':
-        return 'https://toggl.com/reports/api/v2/details'
-      case 'summary':
-        return 'https://toggl.com/reports/api/v2/summary'
-      case 'weekly':
-        return 'https://toggl.com/reports/api/v2/weekly'
-    }
-  }
-
-  get getResponse (): TogglApi.responce.Details | null {
+  get getResponse () {
     return this.response
   }
 
@@ -44,6 +28,10 @@ class TogglStateModule extends VuexModule {
 
   get getLoading (): boolean {
     return this.loading
+  }
+
+  get getWorkSpaceURL (): string {
+    return this.workSpaceURL
   }
 
   @Mutation
@@ -62,7 +50,7 @@ class TogglStateModule extends VuexModule {
   }
 
   @Mutation
-  private setResponse (value: TogglApi.responce.Details | null) {
+  private setResponse (value: any) {
     this.response = value
   }
   @Mutation
@@ -75,6 +63,11 @@ class TogglStateModule extends VuexModule {
     this.loading = value
   }
 
+  @Mutation
+  setWrokSpaceURL (value: string) {
+    this.workSpaceURL = value
+  }
+
   @Action
   public async recover (recoverStateAll: any | null) {
     const recoverState: this | null = recoverStateAll[name]
@@ -83,10 +76,10 @@ class TogglStateModule extends VuexModule {
     }
   }
   @Action
-  doRequest () {
+  refleshAuth () {
     this.setLoading(true)
     axios
-      .get('https://toggl.com/reports/api/v2/details',
+      .get('https://Backlog.com/reports/api/v2/details',
         {
           headers: {
             Authorization: `Basic ${btoa(this.apiToken + ':api_token')}`
@@ -94,7 +87,27 @@ class TogglStateModule extends VuexModule {
           params: this.request
         }
       )
-      .then((res: AxiosResponse<TogglApi.responce.Details>) => {
+      .then((res: AxiosResponse) => {
+        this.setResponse(res.data)
+      })
+      .catch(err => {
+        this.setResponse(null)
+        throw err
+      })
+      .finally(() => { this.setLoading(false) })
+  }
+
+  @Action
+  fetchSpace () {
+    this.setLoading(true)
+    if (!this.workSpaceURL || !this.apiToken) return
+    axios
+      .get(this.workSpaceURL + '/api/v2/space',
+        {
+          params: { apiKey: this.apiToken }
+        }
+      )
+      .then((res: AxiosResponse) => {
         this.setResponse(res.data)
       })
       .catch(err => {
@@ -105,4 +118,4 @@ class TogglStateModule extends VuexModule {
   }
 }
 
-export const togglStateModule = getModule(TogglStateModule)
+export const backlogStateModule = getModule(BacklogStateModule)
