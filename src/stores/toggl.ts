@@ -4,6 +4,9 @@ import store from '@/store'
 import axios, { AxiosResponse } from 'axios'
 import TogglItem from '@/classes/TogglItem'
 import dayjs from 'dayjs'
+
+export interface TotalTime {estimation: {complete: number, uncomplete: number}, achieve: {complete: number, uncomplete: number}}
+
 declare type TogglApiType = 'base' | 'weekly'|'details' | 'summary'
 type Request = TogglApi.request.Details
 const name = 'toggl'
@@ -23,10 +26,10 @@ class TogglStateModule extends VuexModule {
   private period = 'former'
   private _formatData: FormettedData = {}
   get since (): string {
-    return this.period === 'former' ? dayjs().set('year', Number(this.year)).set('month', 4).set('day', 21).format('YYYY-MM-DD') : dayjs().set('year', Number(this.year)).set('month', 9).set('day', 21).format('YYYY-MM-DD')
+    return this.period === 'former' ? `${this.year}-04-21` : `${this.year}-09-20`
   }
   get until (): string {
-    return this.period === 'former' ? dayjs().set('year', Number(this.year)).set('month', 9).set('day', 20).format('YYYY-MM-DD') : dayjs().set('year', Number(this.year) + 1).set('month', 4).set('day', 20).format('YYYY-MM-DD')
+    return this.period === 'former' ? `${this.year}-09-21` : `${Number(this.year) + 1}-04-20`
   }
   get requestURL (): string {
     switch (this.type) {
@@ -67,6 +70,24 @@ class TogglStateModule extends VuexModule {
 
   get getPeriod (): string {
     return this.period
+  }
+  get totalTime (): TotalTime {
+    const result: TotalTime = { estimation: { complete: 0, uncomplete: 0 }, achieve: { complete: 0, uncomplete: 0 } }
+    for (let project in this._formatData) {
+      for (let id in this._formatData[project]) {
+        if (this._formatData[project][id]) {
+          const datum = this._formatData[project][id]
+          if (datum.backlogData && datum.backlogData.status.name === '完了') {
+            result.estimation.complete = result.estimation.complete + datum.backlogData.estimatedHours
+            result.achieve.complete = result.achieve.complete + datum.raw.dur / 1000 / 3600
+          } else if (datum.backlogData) {
+            result.estimation.uncomplete = result.estimation.uncomplete + datum.backlogData.estimatedHours
+            result.achieve.uncomplete = result.achieve.uncomplete + datum.raw.dur / 1000 / 3600
+          }
+        }
+      }
+    }
+    return result
   }
 
   @Mutation

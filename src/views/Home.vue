@@ -15,6 +15,40 @@
           >fetch backlog</button>
         </p>
       </div>
+      <hr>
+      <nav class="level">
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">納品人日（納品済み）</p>
+            <p class="title">{{hourToNinnichi(totalTime.estimation.complete)}}</p>
+          </div>
+        </div>
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">実働人日（納品済み）</p>
+            <p class="title">{{hourToNinnichi(totalTime.achieve.complete)}}</p>
+          </div>
+        </div>
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">実働人日（未納品）</p>
+            <p class="title">{{hourToNinnichi(totalTime.achieve.uncomplete)}}</p>
+          </div>
+        </div>
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">予定人日（未納品込み）</p>
+            <p class="title">{{hourToNinnichi(totalTime.estimation.complete + totalTime.achieve.uncomplete)}}</p>
+          </div>
+        </div>
+        <div class="level-item has-text-centered">
+          <div>
+            <p class="heading">実働人日（合計）</p>
+            <p class="title">{{hourToNinnichi(totalTime.achieve.complete + totalTime.achieve.uncomplete)}}</p>
+          </div>
+        </div>
+      </nav>
+      <hr>
       <progress
         class="progress is-small is-primary"
         max="100"
@@ -61,17 +95,34 @@
                   <td> {{datum.ninnichi}} </td>
 
                   <td>
-                    <a :href="datum.parentURL" target="_blank" rel="noopener noreferrer" v-if="datum.parentURL">{{datum.parent}}</a>
+                    <a
+                      :href="datum.parentURL"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      v-if="datum.parentURL"
+                    >{{datum.parent}}</a>
                     <span v-else>{{datum.parent}}</span>
                   </td>
                   <td>
                     {{datum.backlogData && datum.backlogData.status ? datum.backlogData.status.name : '-'}}
                   </td>
                   <td>
-                    <a class="button is-info" v-if="datum.noEstimatedHours"> Nodata </a>
-                    <a class="button is-danger" v-else-if="datum.timeOverTwice"> Danger </a>
-                    <a class="button is-warning" v-else-if="datum.timeOver"> Warning </a>
-                    <a class="button is-success" v-else> Good </a>
+                    <a
+                      class="button is-info"
+                      v-if="datum.noEstimatedHours"
+                    > Nodata </a>
+                    <a
+                      class="button is-danger"
+                      v-else-if="datum.timeOverTwice"
+                    > Danger </a>
+                    <a
+                      class="button is-warning"
+                      v-else-if="datum.timeOver"
+                    > Warning </a>
+                    <a
+                      class="button is-success"
+                      v-else
+                    > Good </a>
                   </td>
                 </tr>
               </tbody>
@@ -107,7 +158,7 @@
 import { Component, Vue } from 'vue-property-decorator'
 import axios from 'axios'
 import frontConfig from '../classes/FrontConfig'
-import { togglStateModule } from '../stores/toggl'
+import { togglStateModule, TotalTime } from '../stores/toggl'
 import TogglItem from '@/classes/TogglItem'
 @Component({
   components: {}
@@ -143,6 +194,14 @@ export default class Home extends Vue {
 
   get togglLoading (): boolean {
     return togglStateModule.getLoading
+  }
+
+  get totalTime (): TotalTime {
+    return togglStateModule.totalTime
+  }
+
+  hourToNinnichi (value: number): string {
+    return (value / 8).toFixed(1) + '日'
   }
 
   created () {}
