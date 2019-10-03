@@ -15,11 +15,20 @@
               @click="$modal.push('config')"
             >Config</a>
           </div>
+          <div class="navbar-end navbar-menu">
+            <a
+              class="navbar-item"
+              href="//github.com/kota-matsui-edi/toggl-backlog-aggregator"
+              target="_blank"
+            >
+              <font-awesome-icon :icon="['fab', 'github']"> </font-awesome-icon>
+            </a>
+          </div>
         </div>
       </nav>
     </div>
     <div class="container">
-    <router-view />
+      <router-view />
     </div>
     <modal name="config">
       <config />
