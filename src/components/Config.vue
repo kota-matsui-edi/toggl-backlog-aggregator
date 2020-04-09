@@ -20,7 +20,7 @@
                   type="text"
                   placeholder="abcdefghijklmn "
                   v-model="togglApiToken"
-                >
+                />
               </p>
             </div>
             <div class="field">
@@ -31,7 +31,7 @@
                   type="text"
                   placeholder="123456"
                   v-model="toggleWorkSpaceId"
-                >
+                />
               </p>
             </div>
           </div>
@@ -47,7 +47,7 @@
                   type="text"
                   placeholder="https://xx.backlog.com"
                   v-model="backlogWorkSpaceURL"
-                >
+                />
               </p>
             </div>
             <div class="field">
@@ -58,7 +58,7 @@
                   type="text"
                   placeholder="abcdefghijklmn "
                   v-model="backlogApiToken"
-                >
+                />
               </p>
             </div>
           </div>
@@ -75,17 +75,17 @@
               type="number"
               placeholder="2019"
               v-model="year"
-            >
+            />
           </p>
           <p class="control">
             <span class="select">
               <select v-model="period">
                 <option value="former">上期</option>
                 <option value="later">下期</option>
+                <option value="year">通年</option>
               </select>
             </span>
           </p>
-
         </div>
         <div class="field">
           <p class="control">
@@ -93,7 +93,7 @@
               <input
                 type="checkbox"
                 v-model="useLocalStorage"
-              > use local storage.
+              /> use local storage.
             </label>
           </p>
         </div>
@@ -110,12 +110,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
-import axios from 'axios'
 import frontConfig from '@/classes/FrontConfig'
-import { togglStateModule } from '@/stores/toggl'
+import { togglStateModule, Period } from '@/stores/toggl'
 import { backlogStateModule } from '@/stores/backlog'
 
-import TogglItem from '@/classes/TogglItem'
 @Component({
   components: {}
 })
@@ -150,10 +148,10 @@ export default class Config extends Vue {
   set year (value: string) {
     togglStateModule.setYear(value)
   }
-  get period (): string {
+  get period (): Period {
     return togglStateModule.getPeriod
   }
-  set period (value: string) {
+  set period (value: Period) {
     togglStateModule.setPeriod(value)
   }
   get useLocalStorage (): boolean {

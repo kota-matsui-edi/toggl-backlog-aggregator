@@ -6,7 +6,7 @@ import TogglItem from '@/classes/TogglItem'
 import dayjs from 'dayjs'
 
 export interface TotalTime {estimation: {complete: number, uncomplete: number}, achieve: {complete: number, uncomplete: number}}
-
+export type Period = 'former' | 'later' | 'year'
 declare type TogglApiType = 'base' | 'weekly'|'details' | 'summary'
 type Request = TogglApi.request.Details
 const name = 'toggl'
@@ -23,13 +23,27 @@ class TogglStateModule extends VuexModule {
   private response: TogglApi.responce.Details | null = null
   private loading = false;
   private year = '2019'
-  private period = 'former'
+  private period: Period = 'former'
   private _formatData: FormettedData = {}
   get since (): string {
-    return this.period === 'former' ? `${this.year}-04-21` : `${this.year}-09-20`
+    switch(this.period) {
+      case 'former':
+        return `${this.year}-04-01`
+      case 'later':
+        return `${this.year}-09-01`
+      case 'year':
+        return `${this.year}-04-01`
+    }
   }
   get until (): string {
-    return this.period === 'former' ? `${this.year}-09-21` : `${Number(this.year) + 1}-04-20`
+    switch(this.period) {
+      case 'former':
+        return `${this.year}-08-31`
+      case 'later':
+        return `${Number(this.year) + 1}-03-31`
+      case 'year':
+        return `${Number(this.year) + 1}-03-31`
+    }
   }
   get requestURL (): string {
     switch (this.type) {
@@ -68,7 +82,7 @@ class TogglStateModule extends VuexModule {
     return this.year
   }
 
-  get getPeriod (): string {
+  get getPeriod (): Period {
     return this.period
   }
   get totalTime (): TotalTime {
@@ -137,7 +151,7 @@ class TogglStateModule extends VuexModule {
   }
 
   @Mutation
-  setPeriod (value: string) {
+  setPeriod (value: Period) {
     this.period = value
   }
 

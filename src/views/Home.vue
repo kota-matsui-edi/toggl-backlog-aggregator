@@ -6,6 +6,7 @@
           <button
             class="button is-primary"
             @click="fetchToggl"
+            id="hoge"
           >fetch toggl</button>
         </p>
         <p class="control">
@@ -54,7 +55,7 @@
         max="100"
         v-if="togglLoading"
       >15%</progress>
-      <template v-else-if="formattedData.length === 0">
+      <template v-else-if="formattedData === {}">
         <h3 class="title">No Data</h3>
         <p>please check your <a @click="$modal.push('config')">configrations</a>.</p>
       </template>
@@ -156,10 +157,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
-import axios from 'axios'
 import frontConfig from '../classes/FrontConfig'
 import { togglStateModule, TotalTime } from '../stores/toggl'
-import TogglItem from '@/classes/TogglItem'
 @Component({
   components: {}
 })
