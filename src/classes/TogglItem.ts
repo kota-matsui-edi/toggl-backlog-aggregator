@@ -45,7 +45,7 @@ export default class TogglItem {
   get backlogProjectName (): string {
     if(!this.raw[0]) return ''
     if (this.raw[0].description.split('-').length === 1) return '-'
-    return this.raw[0].description.split('-')[0]
+    return this.raw[0].description.split('-')[0].trim();
   }
 
   get timeOver (): boolean {
@@ -64,7 +64,7 @@ export default class TogglItem {
   get backlogProjectID (): string {
     const test = this.raw[0].description.split('-')[1]
     if (!test) return '-'
-    return test.split(' ')[0]
+    return test.split(' ')[0].trim()
   }
   get backlogURL (): string | null {
     if (this.backlogProjectName === '-' || this.backlogProjectID === '-') return null
