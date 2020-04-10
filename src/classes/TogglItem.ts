@@ -1,25 +1,52 @@
-import axios from 'axios'
-import { backlogStateModule } from '@/stores/backlog'
-import dayjs from 'dayjs'
-
 export default class TogglItem {
-  public raw: TogglApi.responce.DetailsDatum
+  public raw: TogglApi.responce.DetailsDatum[]
   public backlogData: any
-  constructor (value: TogglApi.responce.DetailsDatum) {
+  constructor (value: TogglApi.responce.DetailsDatum[]) {
     this.raw = value
   }
+  get users (): string[] {
+    const result: string[] = []
+    this.raw.forEach(el=>{
+      const user = el.user;
+      if(!result.includes(user)) {
+        result.push(user)
+      }
+    })
+    return result
+  }
+
+  get userDulation(): {[user: string]: number} {
+    const result: {[user: string]: number} = {}
+    this.raw.forEach(el=>{
+      if(result[el.user]) {
+        result[el.user] += el.dur
+      } else {
+        result[el.user] = el.dur
+      }
+    })
+    return result
+  }
+
+  get totalDuration():number {
+    let result = 0;
+    this.users.forEach(el=>{
+      result += this.userDulation[el] ||0
+    })
+    return result
+  }
   get backlogProjectName (): string {
-    if (this.raw.description.split('-').length === 1) return '-'
-    return this.raw.description.split('-')[0]
+    if(!this.raw[0]) return ''
+    if (this.raw[0].description.split('-').length === 1) return '-'
+    return this.raw[0].description.split('-')[0]
   }
 
   get timeOver (): boolean {
     if (!this.backlogData) return false
-    return this.raw.dur / 1000 / 3600 > Number(this.backlogData.estimatedHours)
+    return this.totalDuration / 1000 / 3600 > Number(this.backlogData.estimatedHours)
   }
   get timeOverTwice (): boolean {
     if (!this.backlogData) return false
-    return this.raw.dur / 1000 / 3600 > Number(this.backlogData.estimatedHours) * 2
+    return this.totalDuration / 1000 / 3600 > Number(this.backlogData.estimatedHours) * 2
   }
 
   get noEstimatedHours (): boolean {
@@ -27,7 +54,7 @@ export default class TogglItem {
     return !this.backlogData.estimatedHours
   }
   get backlogProjectID (): string {
-    const test = this.raw.description.split('-')[1]
+    const test = this.raw[0].description.split('-')[1]
     if (!test) return '-'
     return test.split(' ')[0]
   }
@@ -48,26 +75,7 @@ export default class TogglItem {
   }
 
   get ninnichi (): string {
-    return (this.raw.dur / 1000 / 3600).toFixed(1) + '時間'
+    return (this.totalDuration / 1000 / 3600).toFixed(1) + '時間'
   }
 
-  fetchBacklogStatus (): void {
-    console.log('fetchBacklogStatus')
-    if (backlogStateModule.getApiToken && this.backlogProjectID !== '-' && this.backlogProjectName !== '-') {
-      axios
-        .get(backlogStateModule.getWorkSpaceURL + '/api/v2/issues/' + this.backlogProjectName + '-' + this.backlogProjectID,
-          {
-            params: { apiKey: backlogStateModule.getApiToken }
-          }
-        )
-        .then(res => {
-          console.log(res)
-          this.backlogData = res.data
-        })
-        .catch(err => {
-          this.backlogData = null
-          console.log(err)
-        })
-    }
-  }
 }

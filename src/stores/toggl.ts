@@ -3,14 +3,14 @@ import { Module, VuexModule, Mutation, getModule, Action } from 'vuex-module-dec
 import store from '@/store'
 import axios, { AxiosResponse } from 'axios'
 import TogglItem from '@/classes/TogglItem'
-import dayjs from 'dayjs'
+import { backlogStateModule } from '@/stores/backlog'
 
-export interface TotalTime {estimation: {complete: number, uncomplete: number}, achieve: {complete: number, uncomplete: number}}
+export interface TotalTime { estimation: { complete: number, uncomplete: number }, achieve: { complete: number, uncomplete: number } }
 export type Period = 'former' | 'later' | 'year'
-declare type TogglApiType = 'base' | 'weekly'|'details' | 'summary'
+declare type TogglApiType = 'base' | 'weekly' | 'details' | 'summary'
 type Request = TogglApi.request.Details
 const name = 'toggl'
-export type FormettedData = {[project:string]:{[id: string]: TogglItem}}
+export type FormettedData = { [project: string]: { [id: string]: TogglItem } }
 @Module({ dynamic: true, store, name, namespaced: true })
 class TogglStateModule extends VuexModule {
   private type: TogglApiType = 'details'
@@ -18,15 +18,14 @@ class TogglStateModule extends VuexModule {
     user_agent: 'ediplex',
     workspace_id: ''
   }
-  private dataObject: TogglItem[] = []
   private apiToken = ''
-  private response: TogglApi.responce.Details | null = null
+  private response: TogglApi.responce.DetailsDatum[] = []
   private loading = false;
   private year = '2019'
   private period: Period = 'former'
-  private _formatData: FormettedData = {}
+  private backlogResponse: any = {}
   get since (): string {
-    switch(this.period) {
+    switch (this.period) {
       case 'former':
         return `${this.year}-04-01`
       case 'later':
@@ -36,7 +35,7 @@ class TogglStateModule extends VuexModule {
     }
   }
   get until (): string {
-    switch(this.period) {
+    switch (this.period) {
       case 'former':
         return `${this.year}-08-31`
       case 'later':
@@ -58,9 +57,6 @@ class TogglStateModule extends VuexModule {
     }
   }
 
-  get getResponse (): TogglApi.responce.Details | null {
-    return this.response
-  }
 
   get getRequest () {
     return this.request
@@ -74,9 +70,33 @@ class TogglStateModule extends VuexModule {
     return this.loading
   }
 
-  get getFormattedData () {
-    return this._formatData
-  }
+  get formattedData (): FormettedData {
+      const result: FormettedData = {
+        noProject: {}
+      }
+      this.response.map(el=>new TogglItem([el])).forEach(datum => {
+        if (datum.backlogProjectID !== '-' || datum.backlogProjectName !== '-') {
+          if (!result[datum.backlogProjectName]) { result[datum.backlogProjectName] = {} }
+          if (result[datum.backlogProjectName][datum.backlogProjectID]) {
+            console.log(datum.backlogProjectName)
+            console.log(datum.backlogProjectID)
+            console.log(result[datum.backlogProjectName][datum.backlogProjectID].userDulation)
+            console.log(datum.totalDuration / 1000 / 3600)
+            result[datum.backlogProjectName][datum.backlogProjectID].raw.push(datum.raw[0]);
+          } else {
+            result[datum.backlogProjectName][datum.backlogProjectID] = datum
+          }
+        } else {
+          if (result.noProject[datum.raw[0].description]) {
+            result.noProject[datum.raw[0].description].raw.push(datum.raw[0]);
+          } else {
+            result.noProject[datum.raw[0].description] = datum
+          }
+        }
+        result[datum.backlogProjectName][datum.backlogProjectID].backlogData = this.backlogResponse[datum.backlogProjectName] ? this.backlogResponse[datum.backlogProjectName][datum.backlogProjectID] : null
+      })
+      return result
+    }
 
   get getYear (): string {
     return this.year
@@ -87,16 +107,16 @@ class TogglStateModule extends VuexModule {
   }
   get totalTime (): TotalTime {
     const result: TotalTime = { estimation: { complete: 0, uncomplete: 0 }, achieve: { complete: 0, uncomplete: 0 } }
-    for (let project in this._formatData) {
-      for (let id in this._formatData[project]) {
-        if (this._formatData[project][id]) {
-          const datum = this._formatData[project][id]
+    for (let project in this.formattedData) {
+      for (let id in this.formattedData[project]) {
+        if (this.formattedData[project][id]) {
+          const datum = this.formattedData[project][id]
           if (datum.backlogData && datum.backlogData.status.name === '完了') {
             result.estimation.complete = result.estimation.complete + datum.backlogData.estimatedHours
-            result.achieve.complete = result.achieve.complete + datum.raw.dur / 1000 / 3600
+            result.achieve.complete = result.achieve.complete + datum.totalDuration / 1000 / 3600
           } else if (datum.backlogData) {
             result.estimation.uncomplete = result.estimation.uncomplete + datum.backlogData.estimatedHours
-            result.achieve.uncomplete = result.achieve.uncomplete + datum.raw.dur / 1000 / 3600
+            result.achieve.uncomplete = result.achieve.uncomplete + datum.totalDuration / 1000 / 3600
           }
         }
       }
@@ -120,21 +140,10 @@ class TogglStateModule extends VuexModule {
   }
 
   @Mutation
-  private setResponse (value: TogglApi.responce.Details | null) {
+  private setResponse (value: TogglApi.responce.DetailsDatum[]) {
     this.response = value
-    const result: TogglItem[] = []
-    if (value) {
-      value.data.forEach((datum) => {
-        const item = new TogglItem(datum)
-        result.push(item)
-      })
-      if (this.dataObject) this.dataObject = this.dataObject.concat(result)
-      else this.dataObject = result
-    } else {
-      this.dataObject = []
-      this._formatData = {}
-    }
   }
+
   @Mutation
   public setAllState (value: this) {
     Object.assign(this, value)
@@ -156,19 +165,6 @@ class TogglStateModule extends VuexModule {
   }
 
   @Mutation
-  concatData (data: TogglApi.responce.Details) {
-    if (this.response) this.response.data = this.response.data.concat(data.data)
-    else this.response = data
-    const result: TogglItem[] = []
-    data.data.forEach((datum) => {
-      const item = new TogglItem(datum)
-      result.push(item)
-    })
-    if (this.dataObject) this.dataObject = this.dataObject.concat(result)
-    else this.dataObject = result
-  }
-
-  @Mutation
   activateInstance (value: FormettedData) {
     for (let project in value) {
       for (let id in value[project]) {
@@ -176,54 +172,38 @@ class TogglStateModule extends VuexModule {
           const temp = value[project][id]
           const instance = new TogglItem(temp.raw)
           instance.backlogData = temp.backlogData
-          this._formatData[project][id] = instance
+          this.formattedData[project][id] = instance
         }
       }
     }
   }
+
   @Mutation
-  setFormattedData () {
-    console.log('setFormattedData')
-    const res = this.dataObject
-    if (!res) return {}
-    const result: FormettedData = {}
-    res.forEach(datum => {
-      if (datum.backlogProjectID !== '-' || datum.backlogProjectName !== '-') {
-        if (!result[datum.backlogProjectName]) { result[datum.backlogProjectName] = {} }
-        if (result[datum.backlogProjectName][datum.backlogProjectID]) {
-          console.log(datum.backlogProjectName)
-          console.log(datum.backlogProjectID)
-          console.log(result[datum.backlogProjectName][datum.backlogProjectID].raw.dur / 1000 / 3600)
-          console.log(datum.raw.dur / 1000 / 3600)
-          result[datum.backlogProjectName][datum.backlogProjectID].raw.dur = datum.raw.dur + result[datum.backlogProjectName][datum.backlogProjectID].raw.dur
-        } else {
-          result[datum.backlogProjectName][datum.backlogProjectID] = datum
-        }
-      } else {
-        if (!result.noProject) result.noProject = {}
-        if (result.noProject[datum.raw.description]) {
-          result.noProject[datum.raw.description].raw.dur = datum.raw.dur + result.noProject[datum.raw.description].raw.dur
-        } else {
-          result.noProject[datum.raw.description] = datum
-        }
+  addBacklogResponse(payload: {project: string, id: string, value: any}) {
+    this.backlogResponse = {
+      ...this.backlogResponse,
+      [payload.project]:{
+        ...this.backlogResponse[payload.project],
+        [payload.id]: payload.value
       }
-    })
-    this._formatData = result
+    }
+
   }
+
 
   @Action
   public async recover (recoverStateAll: any | null) {
     const recoverState: this | null = recoverStateAll[name]
     if (recoverState) {
       this.setAllState(recoverState)
-      this.activateInstance(recoverState._formatData)
+      this.activateInstance(recoverState.formattedData)
     }
   }
   @Action
   async doRequest () {
     this.setLoading(true)
     this.updateRequest({ since: this.since, until: this.until })
-    this.setResponse(null)
+    this.setResponse([])
     let i = 1
     let count = 0
     const that = this
@@ -248,16 +228,15 @@ class TogglStateModule extends VuexModule {
           console.log(res)
           count = count + res.data.per_page
           const totalCount = res.data.total_count
-          that.concatData(res.data)
-          if (count < totalCount) {
+          that.setResponse(that.response.concat(res.data.data))
+          if (false) {
             callEachPage(page + 1, count)
           } else {
             that.setLoading(false)
-            that.setFormattedData()
           }
         })
         .catch(err => {
-          that.setResponse(null)
+          that.setResponse([])
           that.setLoading(false)
           throw err
         })
@@ -266,12 +245,31 @@ class TogglStateModule extends VuexModule {
 
   @Action
   async fetchBacklogStatus () {
-    for (let project in this._formatData) {
-      for (let id in this._formatData[project]) {
-        if (this._formatData[project][id]) this._formatData[project][id].fetchBacklogStatus()
+    for (let project in this.formattedData) {
+      console.log(project)
+      for (let id in this.formattedData[project]) {
+        console.log(id)
+        if (this.formattedData[project][id]) {
+          console.log(this.formattedData[project][id])
+          const res = await fetchBacklogStatusEachItem(project, id);
+          console.log(res)
+          this.addBacklogResponse({project, id, value: res});
+        }
       }
     }
   }
 }
-
+async function fetchBacklogStatusEachItem (backlogProjectName: string,  backlogProjectID: string) {
+  console.log('fetchBacklogStatus')
+  if (backlogStateModule.getApiToken && backlogProjectID !== '-' && backlogProjectName !== '-') {
+    const res = await axios
+      .get(backlogStateModule.getWorkSpaceURL + '/api/v2/issues/' + backlogProjectName + '-' + backlogProjectID,
+        {
+          params: { apiKey: backlogStateModule.getApiToken }
+        }
+      )
+      console.log(res)
+    return res.data
+  }
+}
 export const togglStateModule = getModule(TogglStateModule)

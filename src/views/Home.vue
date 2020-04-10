@@ -89,7 +89,7 @@
                       rel="noopener noreferrer"
                       v-if="datum.backlogURL"
                     >{{projectName + '-' + id}}</a><span v-else> -</span></td>
-                  <td> {{datum.raw.description}} </td>
+                  <td> {{datum.raw[0].description}} </td>
                   <td>
                     {{datum.backlogData && datum.backlogData.estimatedHours ? datum.backlogData.estimatedHours + '時間': '-'}}
                   </td>
@@ -142,8 +142,8 @@
               :key="id"
             >
               <td>-</td>
-              <td> {{datum.raw.description}} </td>
-              <td> {{datum.raw.dur}} </td>
+              <td> {{datum.raw[0].description}} </td>
+              <td> {{datum.raw[0].dur}} </td>
               <td>-</td>
             </tr>
           </tbody>
@@ -176,12 +176,9 @@ export default class Home extends Vue {
   set toggleWorkSpaceId (value: string) {
     togglStateModule.updateRequest({ workspace_id: value })
   }
-  get res (): TogglApi.responce.Details | null {
-    return togglStateModule.getResponse
-  }
 
   get formattedData () {
-    return togglStateModule.getFormattedData
+    return togglStateModule.formattedData
   }
 
   get useLocalStorage (): boolean {
