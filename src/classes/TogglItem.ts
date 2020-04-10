@@ -1,6 +1,14 @@
+export interface BacklogResponse {
+  estimatedHours: number;
+  status: {
+    name:string
+  };
+  parentIssueId: string
+}
+
 export default class TogglItem {
   public raw: TogglApi.responce.DetailsDatum[]
-  public backlogData: any
+  public backlogData: BacklogResponse | null = null
   constructor (value: TogglApi.responce.DetailsDatum[]) {
     this.raw = value
   }

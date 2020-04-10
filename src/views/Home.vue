@@ -15,47 +15,93 @@
             @click="fetchBacklog"
           >fetch backlog</button>
         </p>
+        <p class="control">
+          <button
+            class="button is-warn"
+            @click="stopFetch"
+          >stop</button>
+        </p>
       </div>
-      <hr>
-      <nav class="level">
-        <div class="level-item has-text-centered">
-          <div>
-            <p class="heading">納品人日（納品済み）</p>
-            <p class="title">{{hourToNinnichi(totalTime.estimation.complete)}}</p>
+      <section>
+        <hr>
+        <h3 class="title">Total</h3>
+        <nav class="level">
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">納品人日（納品済み）</p>
+              <p class="title">{{hourToNinnichi(totalTime.estimation.complete)}}</p>
+            </div>
           </div>
-        </div>
-        <div class="level-item has-text-centered">
-          <div>
-            <p class="heading">実働人日（納品済み）</p>
-            <p class="title">{{hourToNinnichi(totalTime.achieve.complete)}}</p>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（納品済み）</p>
+              <p class="title">{{hourToNinnichi(totalTime.achieve.complete)}}</p>
+            </div>
           </div>
-        </div>
-        <div class="level-item has-text-centered">
-          <div>
-            <p class="heading">実働人日（未納品）</p>
-            <p class="title">{{hourToNinnichi(totalTime.achieve.uncomplete)}}</p>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（未納品）</p>
+              <p class="title">{{hourToNinnichi(totalTime.achieve.uncomplete)}}</p>
+            </div>
           </div>
-        </div>
-        <div class="level-item has-text-centered">
-          <div>
-            <p class="heading">予定人日（未納品込み）</p>
-            <p class="title">{{hourToNinnichi(totalTime.estimation.complete + totalTime.achieve.uncomplete)}}</p>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">予定人日（未納品込み）</p>
+              <p class="title">{{hourToNinnichi(totalTime.estimation.complete + totalTime.achieve.uncomplete)}}</p>
+            </div>
           </div>
-        </div>
-        <div class="level-item has-text-centered">
-          <div>
-            <p class="heading">実働人日（合計）</p>
-            <p class="title">{{hourToNinnichi(totalTime.achieve.complete + totalTime.achieve.uncomplete)}}</p>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（合計）</p>
+              <p class="title">{{hourToNinnichi(totalTime.achieve.complete + totalTime.achieve.uncomplete)}}</p>
+            </div>
           </div>
-        </div>
-      </nav>
-      <hr>
+        </nav>
+        <hr>
+      </section>
+      <section v-for="(time, key) in totalTimeByUser" :key="key">
+        <hr>
+        <h3 class="title">{{key}}</h3>
+        <nav class="level">
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">納品人日（納品済み）</p>
+              <p class="title">{{hourToNinnichi(time.estimation.complete)}}</p>
+            </div>
+          </div>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（納品済み）</p>
+              <p class="title">{{hourToNinnichi(time.achieve.complete)}}</p>
+            </div>
+          </div>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（未納品）</p>
+              <p class="title">{{hourToNinnichi(time.achieve.uncomplete)}}</p>
+            </div>
+          </div>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">予定人日（未納品込み）</p>
+              <p class="title">{{hourToNinnichi(time.estimation.complete + time.achieve.uncomplete)}}</p>
+            </div>
+          </div>
+          <div class="level-item has-text-centered">
+            <div>
+              <p class="heading">実働人日（合計）</p>
+              <p class="title">{{hourToNinnichi(time.achieve.complete + time.achieve.uncomplete)}}</p>
+            </div>
+          </div>
+        </nav>
+        <hr>
+      </section>
       <progress
         class="progress is-small is-primary"
         max="100"
         v-if="togglLoading"
       >15%</progress>
-      <template v-else-if="formattedData === {}">
+      <template v-else-if="response.length === 0">
         <h3 class="title">No Data</h3>
         <p>please check your <a @click="$modal.push('config')">configrations</a>.</p>
       </template>
@@ -156,56 +202,69 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
-import frontConfig from '../classes/FrontConfig'
-import { togglStateModule, TotalTime } from '../stores/toggl'
+import { Component, Vue } from "vue-property-decorator";
+import frontConfig from "../classes/FrontConfig";
+import { togglStateModule, TotalTime } from "../stores/toggl";
 @Component({
   components: {}
 })
 export default class Home extends Vue {
-  get togglApiToken (): string {
-    return togglStateModule.getApiToken
+  get togglApiToken(): string {
+    return togglStateModule.getApiToken;
   }
-  set togglApiToken (value: string) {
-    togglStateModule.setApiToken(value)
-  }
-
-  get toggleWorkSpaceId (): string {
-    return togglStateModule.getRequest.workspace_id
-  }
-  set toggleWorkSpaceId (value: string) {
-    togglStateModule.updateRequest({ workspace_id: value })
+  set togglApiToken(value: string) {
+    togglStateModule.setApiToken(value);
   }
 
-  get formattedData () {
-    return togglStateModule.formattedData
+  get toggleWorkSpaceId(): string {
+    return togglStateModule.getRequest.workspace_id;
+  }
+  set toggleWorkSpaceId(value: string) {
+    togglStateModule.updateRequest({ workspace_id: value });
   }
 
-  get useLocalStorage (): boolean {
-    return frontConfig.useLocalStorage
-  }
-  set useLocalStorage (value: boolean) {
-    frontConfig.useLocalStorage = value
+  get response() {
+    return togglStateModule.getResponse;
   }
 
-  get togglLoading (): boolean {
-    return togglStateModule.getLoading
+  get formattedData() {
+    return togglStateModule.formattedData;
   }
 
-  get totalTime (): TotalTime {
-    return togglStateModule.totalTime
+  get useLocalStorage(): boolean {
+    return frontConfig.useLocalStorage;
+  }
+  set useLocalStorage(value: boolean) {
+    frontConfig.useLocalStorage = value;
   }
 
-  hourToNinnichi (value: number): string {
-    return (value / 8).toFixed(1) + '日'
+  get togglLoading(): boolean {
+    return togglStateModule.getLoading;
   }
 
-  created () {}
-  fetchToggl () {
-    togglStateModule.doRequest()
+  get totalTime(): TotalTime {
+    return togglStateModule.totalTime;
   }
-  fetchBacklog () {
-    togglStateModule.fetchBacklogStatus()
+
+  get totalTimeByUser() {
+    return togglStateModule.totalTimeByUser
+  }
+
+  hourToNinnichi(value: number): string {
+    return (value / 8).toFixed(1) + "日";
+  }
+
+  created() {
+    togglStateModule.setLoading(false);
+  }
+  fetchToggl() {
+    togglStateModule.doRequest();
+  }
+  fetchBacklog() {
+    togglStateModule.fetchBacklogStatus();
+  }
+  stopFetch() {
+    togglStateModule.stopFetch();
   }
 }
 </script>
